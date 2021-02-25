@@ -439,12 +439,14 @@ public class QueryUtils {
 
         desc.aliases(qryEntity.getAliases());
 
+        ClassLoader ldr = U.resolveClassLoader(ctx.config());
+
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
         // We better box these types - otherwise, if user provides, say, raw 'byte' for
         // key or value (which they could), we'll deem key or value as Object which clearly is not right.
-        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
-        Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
+        Class<?> keyCls = U.box(U.classForName(ldr, qryEntity.findKeyType(), null, true));
+        Class<?> valCls = U.box(U.classForName(ldr, qryEntity.findValueType(), null, true));
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
@@ -614,9 +616,10 @@ public class QueryUtils {
             boolean notNull = notNulls != null && notNulls.contains(fieldName);
 
             Object dfltVal = dlftVals != null ? dlftVals.get(fieldName) : null;
+            ClassLoader ldr = U.resolveClassLoader(ctx.config());
 
             QueryBinaryProperty prop = buildBinaryProperty(ctx, fieldName,
-                U.classForName(fieldType, Object.class, true),
+                U.classForName(ldr, fieldType, Object.class, true),
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precision == null ? -1 : precision.getOrDefault(fieldName, -1),
                 scale == null ? -1 : scale.getOrDefault(fieldName, -1));
@@ -659,10 +662,12 @@ public class QueryUtils {
 
         Object dfltVal = dfltVals.get(name);
 
+        ClassLoader ldr = U.resolveClassLoader(ctx.config());
+
         QueryBinaryProperty prop = buildBinaryProperty(
             ctx,
             name,
-            U.classForName(typeName, Object.class, true),
+            U.classForName(ldr, typeName, Object.class, true),
             d.aliases(),
             isKey,
             true,
@@ -683,6 +688,7 @@ public class QueryUtils {
     public static void processClassMeta(QueryEntity qryEntity, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         Set<String> notNulls = qryEntity.getNotNullFields();
+        ClassLoader ldr = U.resolveClassLoader(coCtx.kernalContext().config());
 
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
             GridQueryProperty prop = buildProperty(
@@ -691,7 +697,7 @@ public class QueryUtils {
                 d.keyFieldName(),
                 d.valueFieldName(),
                 entry.getKey(),
-                U.classForName(entry.getValue(), Object.class),
+                U.classForName(ldr, entry.getValue(), Object.class),
                 d.aliases(),
                 notNulls != null && notNulls.contains(entry.getKey()),
                 coCtx);

@@ -613,7 +613,8 @@ public final class UpdatePlanBuilder {
         final String typeName = key ? desc.keyTypeName() : desc.valueTypeName();
 
         //Try to find class for the key locally.
-        final Class<?> cls = key ? U.firstNotNull(U.classForName(desc.keyTypeName(), null), desc.keyClass())
+        final ClassLoader ldr = U.resolveClassLoader(cctx.gridConfig());
+        final Class<?> cls = key ? U.firstNotNull(U.classForName(ldr, desc.keyTypeName(), null), desc.keyClass())
             : desc.valueClass();
 
         boolean isSqlType = QueryUtils.isSqlType(cls);

@@ -1911,6 +1911,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Gather information about system views.
         if (matches(QueryUtils.SCHEMA_SYS, schemaNamePtrn)) {
+            ClassLoader ldr = IgniteUtils.resolveClassLoader(ctx.config());
             schemaMgr.systemViews().stream()
                 .filter(v -> matches(v.getTableName(), tblNamePtrn))
                 .flatMap(
@@ -1922,7 +1923,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 QueryUtils.SCHEMA_SYS,
                                 view.getTableName(),
                                 c.getName(),
-                                IgniteUtils.classForName(DataType.getTypeClassName(c.getType()), Object.class),
+                                IgniteUtils.classForName(ldr, DataType.getTypeClassName(c.getType()), Object.class),
                                 c.isNullable(),
                                 null,
                                 (int)c.getPrecision(),
