@@ -71,7 +71,6 @@ import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.Baselin
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
