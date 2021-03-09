@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.Baselin
 import org.apache.ignite.internal.processors.cluster.baseline.autoadjust.ChangeTopologyWatcher;
 import org.apache.ignite.internal.processors.configuration.distributed.DistributePropertyListener;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
@@ -1195,7 +1196,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState joiningNodeState;
 
         try {
-            joiningNodeState = marsh.unmarshal((byte[])discoData.joiningNodeData(), Thread.currentThread().getContextClassLoader());
+            joiningNodeState = marsh.unmarshal((byte[])discoData.joiningNodeData(), U.resolveClassLoader(ctx.config()));
         }
         catch (IgniteCheckedException e) {
             String msg = "Error on unmarshalling discovery data " +
