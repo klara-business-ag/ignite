@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+/*
+ * Modified for ePost (AI-2049): a per-thread buffer larger than
+ * IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD is dropped after use instead of being
+ * kept for the lifetime of the thread. Original: Apache Ignite 2.18.0.
+ */
+
 package org.apache.ignite.internal.util.io;
 
 import java.io.EOFException;
@@ -29,6 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
@@ -42,6 +49,10 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  * Data input based on {@code Unsafe} operations.
  */
 public class GridUnsafeDataInput extends InputStream implements GridDataInput {
+    /** ePost AI-2049: buffers larger than this are dropped after use. */
+    private static final int EPOST_RELEASE_THRESHOLD = Integer.getInteger(
+        IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD, DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD);
+
     /** */
     private static final Long CHECK_FREQ =
         Long.getLong(IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
@@ -181,6 +192,12 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     @Override public void reset() throws IOException {
         in = null;
 
+        if (inBuf.length > EPOST_RELEASE_THRESHOLD) {
+            inBuf = new byte[1024];
+            maxOff = 0;
+        }
+
+        buf = inBuf;
         off = 0;
         max = 0;
     }
