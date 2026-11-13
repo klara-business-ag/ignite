@@ -18,7 +18,13 @@
 /*
  * Modified for ePost (AI-2049): a per-thread buffer larger than
  * IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD is dropped after use instead of being
- * kept for the lifetime of the thread. Original: Apache Ignite 2.18.0.
+ * kept for the lifetime of the thread. A buffer no larger than its initial size
+ * is never dropped. reset() also points buf back at inBuf, whatever the
+ * threshold, so the thread no longer holds an array passed in through bytes().
+ * fromStream() is unchanged. It halves only on a later read, at most once per
+ * IGNITE_MARSHAL_BUFFERS_RECHECK, and that recheck resets maxOff. The drop in
+ * reset() covers a thread that goes idle.
+ * Original: Apache Ignite 2.18.0.
  */
 
 package org.apache.ignite.internal.util.io;
@@ -63,6 +69,9 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     /** Length of char buffer (for reading strings). */
     private static final int CHAR_BUF_SIZE = 256;
 
+    /** Initial size of the stream buffer. */
+    private static final int INIT_BUF_SIZE = 1024;
+
     /** Buffer for reading general/block data. */
     @GridToStringExclude
     private final byte[] utfBuf = new byte[MAX_BLOCK_SIZE];
@@ -93,7 +102,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
     /** Buffer for reading from stream. */
     @GridToStringExclude
-    private byte[] inBuf = new byte[1024];
+    private byte[] inBuf = new byte[INIT_BUF_SIZE];
 
     /** Maximum message size. */
     private int maxOff;
@@ -192,8 +201,8 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     @Override public void reset() throws IOException {
         in = null;
 
-        if (inBuf.length > EPOST_RELEASE_THRESHOLD) {
-            inBuf = new byte[1024];
+        if (inBuf.length > EPOST_RELEASE_THRESHOLD && inBuf.length > INIT_BUF_SIZE) {
+            inBuf = new byte[INIT_BUF_SIZE];
             maxOff = 0;
         }
 

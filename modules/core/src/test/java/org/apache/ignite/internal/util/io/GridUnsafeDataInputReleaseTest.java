@@ -36,11 +36,14 @@ public class GridUnsafeDataInputReleaseTest {
     private static final int THRESHOLD =
         GridTestUtils.getFieldValue(GridUnsafeDataInput.class, "EPOST_RELEASE_THRESHOLD");
 
+    /** Initial size of the stream buffer. */
+    private static final int INIT_BUF_SIZE = GridTestUtils.getFieldValue(GridUnsafeDataInput.class, "INIT_BUF_SIZE");
+
     /** Skips the tests for a threshold outside the range they are written for. */
     @BeforeClass
     public static void checkThreshold() {
         assumeTrue("Threshold out of the tested range: " + THRESHOLD,
-            2048 <= THRESHOLD && THRESHOLD <= 16 * 1024 * 1024);
+            2 * INIT_BUF_SIZE <= THRESHOLD && THRESHOLD <= 16 * 1024 * 1024);
     }
 
     /** */
@@ -53,7 +56,11 @@ public class GridUnsafeDataInputReleaseTest {
 
         in.reset();
 
-        assertEquals(1024, inBuf(in).length);
+        assertEquals(INIT_BUF_SIZE, inBuf(in).length);
+
+        int maxOff = GridTestUtils.getFieldValue(in, "maxOff");
+
+        assertEquals(0, maxOff);
     }
 
     /** */

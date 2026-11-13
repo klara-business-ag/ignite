@@ -18,7 +18,10 @@
 /*
  * Modified for ePost (AI-2049): a per-thread buffer larger than
  * IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD is dropped after use instead of being
- * kept for the lifetime of the thread. Original: Apache Ignite 2.18.0.
+ * kept for the lifetime of the thread and replaced by one of the size given to
+ * the constructor, or by an empty one for the no-arg constructor. A buffer no
+ * larger than that size is never dropped.
+ * Original: Apache Ignite 2.18.0.
  */
 
 package org.apache.ignite.internal.util.io;
@@ -76,17 +79,21 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** Last length check timestamp. */
     private long lastCheck = CommonUtils.currentTimeMillis();
 
+    /** Initial buffer size, restored when a large buffer is dropped. */
+    private final int initSize;
+
     /**
      *
      */
     public GridUnsafeDataOutput() {
-        // No-op.
+        initSize = 0;
     }
 
     /**
      * @param size Size
      */
     public GridUnsafeDataOutput(int size) {
+        initSize = size;
         bytes = new byte[size];
     }
 
@@ -316,8 +323,10 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void reset() {
         off = 0;
 
-        if (bytes != null && bytes.length > EPOST_RELEASE_THRESHOLD)
-            bytes = new byte[4 * 1024];
+        if (bytes != null && bytes.length > EPOST_RELEASE_THRESHOLD && bytes.length > initSize) {
+            bytes = new byte[initSize];
+            maxOff = 0;
+        }
 
         out = null;
     }

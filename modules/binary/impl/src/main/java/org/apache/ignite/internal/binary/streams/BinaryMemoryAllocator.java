@@ -20,6 +20,8 @@
  * IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD is dropped after use instead of being
  * kept for the lifetime of the thread. Original: Apache Ignite 2.18.0.
  * Backported: IGNITE-28980 (upstream 8a7dfc81).
+ * The PooledAllocator serves only thin-client connections. It is left unchanged
+ * because no thin client reads or writes large values on ePost's Ignite nodes.
  */
 
 package org.apache.ignite.internal.binary.streams;
