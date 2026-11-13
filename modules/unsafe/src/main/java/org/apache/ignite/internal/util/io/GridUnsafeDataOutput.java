@@ -15,6 +15,15 @@
  * limitations under the License.
  */
 
+/*
+ * Modified for ePost (AI-2049): a per-thread buffer larger than
+ * IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD is dropped after use instead of being
+ * kept for the lifetime of the thread and replaced by one of the size given to
+ * the constructor, or by an empty one for the no-arg constructor. A buffer no
+ * larger than that size is never dropped.
+ * Original: Apache Ignite 2.18.0.
+ */
+
 package org.apache.ignite.internal.util.io;
 
 import java.io.IOException;
@@ -26,6 +35,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
@@ -40,6 +50,10 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  * Data output based on {@code Unsafe} operations.
  */
 public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput {
+    /** ePost AI-2049: buffers larger than this are dropped after use. */
+    private static final int EPOST_RELEASE_THRESHOLD = Integer.getInteger(
+        IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD, DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD);
+
     /** */
     private static final long CHECK_FREQ =
         Long.getLong(IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
@@ -65,17 +79,21 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** Last length check timestamp. */
     private long lastCheck = CommonUtils.currentTimeMillis();
 
+    /** Initial buffer size, restored when a large buffer is dropped. */
+    private final int initSize;
+
     /**
      *
      */
     public GridUnsafeDataOutput() {
-        // No-op.
+        initSize = 0;
     }
 
     /**
      * @param size Size
      */
     public GridUnsafeDataOutput(int size) {
+        initSize = size;
         bytes = new byte[size];
     }
 
@@ -304,6 +322,11 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** {@inheritDoc} */
     @Override public void reset() {
         off = 0;
+
+        if (bytes != null && bytes.length > EPOST_RELEASE_THRESHOLD && bytes.length > initSize) {
+            bytes = new byte[initSize];
+            maxOff = 0;
+        }
 
         out = null;
     }
