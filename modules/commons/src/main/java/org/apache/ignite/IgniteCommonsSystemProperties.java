@@ -23,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MEMORY_PER_BYTE_COPY_THRESHOLD;
 import static org.apache.ignite.internal.util.GridLogThrottle.DFLT_LOG_THROTTLE_CAPACITY;
 import static org.apache.ignite.internal.util.tostring.GridToStringBuilder.DFLT_TO_STRING_COLLECTION_LIMIT;
@@ -83,6 +84,20 @@ public class IgniteCommonsSystemProperties {
     @SystemProperty(value = "How often in milliseconds marshal buffers should be rechecked and potentially trimmed",
         type = Long.class, defaults = "" + DFLT_MARSHAL_BUFFERS_RECHECK)
     public static final String IGNITE_MARSHAL_BUFFERS_RECHECK = "IGNITE_MARSHAL_BUFFERS_RECHECK";
+
+    /**
+     * System property to specify the size in bytes above which a per-thread marshal buffer is dropped after use
+     * instead of being kept for the lifetime of the thread. Default value is {@code 1,048,576} bytes (1 MiB).
+     * Small values make the buffers reallocate more often. The optimized marshaller's streams never drop a buffer that
+     * is no larger than its initial size, 1 KiB for reading and 4 KiB for writing. {@link Integer#MAX_VALUE} keeps
+     * every buffer.
+     */
+    @SystemProperty(value = "Size in bytes above which a per-thread marshal buffer is dropped after use. " +
+        "Small values make the buffers reallocate more often. The optimized marshaller's streams never drop a buffer " +
+        "that is no larger than its initial size, 1 KiB for reading and 4 KiB for writing. " +
+        "Integer.MAX_VALUE keeps every buffer",
+        type = Integer.class, defaults = "" + DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD)
+    public static final String IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD = "IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD";
 
     /**
      * System property to specify per thread binary allocator chunk pool size. Default value is {@code 32}.

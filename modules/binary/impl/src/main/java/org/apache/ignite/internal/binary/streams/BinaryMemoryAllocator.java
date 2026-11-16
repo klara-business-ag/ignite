@@ -15,6 +15,15 @@
  * limitations under the License.
  */
 
+/*
+ * Modified for ePost (AI-2049): a per-thread buffer larger than
+ * IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD is dropped after use instead of being
+ * kept for the lifetime of the thread. Original: Apache Ignite 2.18.0.
+ * Backported: IGNITE-28980 (upstream 8a7dfc81).
+ * The PooledAllocator serves only thin-client connections. It is left unchanged
+ * because no thin client reads or writes large values on ePost's Ignite nodes.
+ */
+
 package org.apache.ignite.internal.binary.streams;
 
 import java.util.ArrayDeque;
@@ -23,13 +32,19 @@ import org.apache.ignite.internal.util.CommonUtils;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD;
 
 /**
  * On-heap memory allocator.
  */
 abstract class BinaryMemoryAllocator {
+    /** ePost AI-2049: buffers larger than this are dropped after use. */
+    private static final int EPOST_RELEASE_THRESHOLD =
+        Integer.getInteger(IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD, DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD);
+
     /** Buffer size re-check frequency. */
     private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
 
@@ -127,6 +142,13 @@ abstract class BinaryMemoryAllocator {
 
                 acquired = false;
 
+                if (data.length > EPOST_RELEASE_THRESHOLD) {
+                    this.data = null;
+                    this.maxMsgSize = 0;
+
+                    return;
+                }
+
                 long nowNanos = System.nanoTime();
 
                 if (CommonUtils.nanosToMillis(nowNanos - lastCheckNanos) >= CHECK_FREQ) {
@@ -135,6 +157,7 @@ abstract class BinaryMemoryAllocator {
                     if (this.maxMsgSize < halfSize)
                         this.data = new byte[halfSize];
 
+                    this.maxMsgSize = 0;
                     lastCheckNanos = nowNanos;
                 }
             }

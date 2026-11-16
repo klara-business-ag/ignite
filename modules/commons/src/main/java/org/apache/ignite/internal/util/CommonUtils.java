@@ -118,6 +118,9 @@ public abstract class CommonUtils {
     /** @see IgniteCommonsSystemProperties#IGNITE_MARSHAL_BUFFERS_RECHECK */
     public static final int DFLT_MARSHAL_BUFFERS_RECHECK = 10000;
 
+    /** @see IgniteCommonsSystemProperties#IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD */
+    public static final int DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD = 1024 * 1024;
+
     /** @see IgniteCommonsSystemProperties#IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE */
     public static final int DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE = 32;
 
