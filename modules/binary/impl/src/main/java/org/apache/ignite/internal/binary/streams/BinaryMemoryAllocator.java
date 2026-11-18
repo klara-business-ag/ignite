@@ -23,13 +23,19 @@ import org.apache.ignite.internal.util.CommonUtils;
 
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_PER_THREAD_POOL_SIZE;
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD;
 
 /**
  * On-heap memory allocator.
  */
 public abstract class BinaryMemoryAllocator {
+    /** Buffers larger than this are dropped after use. */
+    private static final int RELEASE_THRESHOLD =
+        Integer.getInteger(IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD, DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD);
+
     /** Buffer size re-check frequency. */
     private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
 
@@ -126,6 +132,13 @@ public abstract class BinaryMemoryAllocator {
                     this.maxMsgSize = maxMsgSize;
 
                 acquired = false;
+
+                if (data.length > RELEASE_THRESHOLD) {
+                    this.data = null;
+                    this.maxMsgSize = 0;
+
+                    return;
+                }
 
                 long nowNanos = System.nanoTime();
 
@@ -224,6 +237,14 @@ public abstract class BinaryMemoryAllocator {
                         data = new byte[adjusted];
                 }
             }
+
+            /**
+             * Drops the data array if it is larger than the release threshold.
+             */
+            public void dropIfAboveThreshold() {
+                if (data.length > RELEASE_THRESHOLD)
+                    data = null;
+            }
         }
 
         /** */
@@ -264,6 +285,7 @@ public abstract class BinaryMemoryAllocator {
                     return;
 
                 holder.adjustSize(msgSize);
+                holder.dropIfAboveThreshold();
 
                 pool.release(holder);
                 holder = null;
