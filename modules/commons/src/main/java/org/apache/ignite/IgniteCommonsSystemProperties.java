@@ -90,13 +90,9 @@ public class IgniteCommonsSystemProperties {
     public static final String IGNITE_MARSHAL_BUFFERS_RECHECK = "IGNITE_MARSHAL_BUFFERS_RECHECK";
 
     /**
-     * System property to specify the size in bytes above which a per-thread
-     * marshal buffer is dropped after use instead of being kept for the lifetime
-     * of the thread. The threshold applies to the capacity of the buffer, not to
-     * the size of the message. Default value is {@code 1,048,576} bytes (1 MiB).
-     * Small values make the buffers reallocate more often. The optimized
-     * marshaller's streams never drop a buffer that is no larger than their
-     * initial size. {@link Integer#MAX_VALUE} keeps every buffer.
+     * System property to specify the size in bytes above which a per-thread marshal buffer is dropped after use.
+     * By default buffers are kept. A value such as {@code 1048576} (1 MiB) is recommended for workloads
+     * with occasional large messages.
      */
     @SystemProperty(value = "Size in bytes above which a per-thread marshal buffer is dropped after use",
         type = Integer.class, defaults = "" + DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD)

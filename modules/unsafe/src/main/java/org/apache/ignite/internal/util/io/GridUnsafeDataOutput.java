@@ -41,8 +41,8 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  * Data output based on {@code Unsafe} operations.
  */
 public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput {
-    /** Buffers larger than this are dropped after use. A buffer no larger than the initial size is kept. */
-    private static final int RELEASE_THRESHOLD = Integer.getInteger(
+    /** Buffers larger than this are replaced by a buffer of initial size after use (not final for tests). */
+    private static int RELEASE_THRESHOLD = Integer.getInteger(
         IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD, DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD);
 
     /** */
@@ -52,8 +52,14 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** Length of char buffer (for writing strings). */
     private static final int CHAR_BUF_SIZE = 256;
 
+    /** Empty buffer, restored when a large buffer of a stream without initial size is dropped. */
+    private static final byte[] EMPTY_BYTES = new byte[0];
+
     /** Char buffer for fast string writes. */
     private final char[] cbuf = new char[CHAR_BUF_SIZE];
+
+    /** Initial buffer size, restored when a large buffer is dropped. */
+    private final int initSize;
 
     /** Bytes. */
     private byte[] bytes;
@@ -69,9 +75,6 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
     /** Last length check timestamp. */
     private long lastCheck = CommonUtils.currentTimeMillis();
-
-    /** Initial buffer size, restored when a large buffer is dropped. */
-    private final int initSize;
 
     /**
      *
@@ -314,8 +317,8 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     @Override public void reset() {
         off = 0;
 
-        if (bytes != null && bytes.length > RELEASE_THRESHOLD && bytes.length > initSize) {
-            bytes = new byte[initSize];
+        if (bytes != null && bytes.length > RELEASE_THRESHOLD) {
+            bytes = initSize == 0 ? EMPTY_BYTES : new byte[initSize];
             maxOff = 0;
         }
 

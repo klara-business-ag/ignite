@@ -43,8 +43,8 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  * Data input based on {@code Unsafe} operations.
  */
 public class GridUnsafeDataInput extends InputStream implements GridDataInput {
-    /** Buffers larger than this are dropped after use. A buffer no larger than the initial size is kept. */
-    private static final int RELEASE_THRESHOLD = Integer.getInteger(
+    /** Buffers larger than this are replaced by a buffer of initial size after use (not final for tests). */
+    private static int RELEASE_THRESHOLD = Integer.getInteger(
         IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD, DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD);
 
     /** */
@@ -189,7 +189,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     @Override public void reset() throws IOException {
         in = null;
 
-        if (inBuf.length > RELEASE_THRESHOLD && inBuf.length > INIT_BUF_SIZE) {
+        if (inBuf.length > RELEASE_THRESHOLD) {
             inBuf = new byte[INIT_BUF_SIZE];
             maxOff = 0;
         }

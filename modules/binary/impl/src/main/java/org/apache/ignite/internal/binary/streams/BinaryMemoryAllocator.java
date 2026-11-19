@@ -32,8 +32,8 @@ import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_R
  * On-heap memory allocator.
  */
 public abstract class BinaryMemoryAllocator {
-    /** Buffers larger than this are dropped after use. */
-    private static final int RELEASE_THRESHOLD =
+    /** Buffers larger than this are dropped after use (not final for tests). */
+    private static int RELEASE_THRESHOLD =
         Integer.getInteger(IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD, DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD);
 
     /** Buffer size re-check frequency. */
@@ -238,9 +238,7 @@ public abstract class BinaryMemoryAllocator {
                 }
             }
 
-            /**
-             * Drops the data array if it is larger than the release threshold.
-             */
+            /** Drops the data array if it is larger than the release threshold. */
             public void dropIfAboveThreshold() {
                 if (data.length > RELEASE_THRESHOLD)
                     data = null;

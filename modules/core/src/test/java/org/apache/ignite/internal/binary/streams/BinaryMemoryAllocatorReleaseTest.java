@@ -33,19 +33,27 @@ import static org.junit.Assert.assertTrue;
  * Tests that the thread-local and the pooled allocator chunks drop an array above the release threshold on release.
  */
 public class BinaryMemoryAllocatorReleaseTest {
-    /** Threshold in effect. */
-    private static final int THRESHOLD =
-        GridTestUtils.getFieldValue(BinaryMemoryAllocator.class, "RELEASE_THRESHOLD");
+    /** Release threshold set for the tests. */
+    private static final int THRESHOLD = 64 * 1024;
 
-    /** Clears the thread-local chunk and pool, so that every test starts empty. */
+    /** Release threshold to restore after a test. */
+    private int oldThreshold;
+
+    /** Sets the release threshold and clears the thread-local chunk and pool, so that every test starts empty. */
     @Before
     public void before() {
+        oldThreshold = GridTestUtils.getFieldValue(BinaryMemoryAllocator.class, "RELEASE_THRESHOLD");
+
+        GridTestUtils.setFieldValue(BinaryMemoryAllocator.class, "RELEASE_THRESHOLD", THRESHOLD);
+
         clearHolders();
     }
 
-    /** Clears the thread-local chunk and pool, so that no array is left for the next tests on this thread. */
+    /** Restores the release threshold and clears the thread-local chunk and pool. */
     @After
     public void after() {
+        GridTestUtils.setFieldValue(BinaryMemoryAllocator.class, "RELEASE_THRESHOLD", oldThreshold);
+
         clearHolders();
     }
 

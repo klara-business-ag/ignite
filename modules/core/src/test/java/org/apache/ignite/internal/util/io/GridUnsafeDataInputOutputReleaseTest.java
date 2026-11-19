@@ -19,6 +19,8 @@ package org.apache.ignite.internal.util.io;
 
 import java.io.ByteArrayInputStream;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -32,9 +34,8 @@ import static org.junit.Assert.assertSame;
  * the release threshold.
  */
 public class GridUnsafeDataInputOutputReleaseTest {
-    /** Threshold in effect, the same for both streams. */
-    private static final int THRESHOLD =
-        GridTestUtils.getFieldValue(GridUnsafeDataInput.class, "RELEASE_THRESHOLD");
+    /** Release threshold set for the tests, the same for both streams. */
+    private static final int THRESHOLD = 64 * 1024;
 
     /** Initial size of the input stream buffer. */
     private static final int IN_INIT_SIZE = 1024;
@@ -44,6 +45,23 @@ public class GridUnsafeDataInputOutputReleaseTest {
      * it restored.
      */
     private static final int OUT_INIT_SIZE = 1000;
+
+    /** Release threshold to restore after a test. */
+    private int oldThreshold;
+
+    /** Sets the release threshold of both streams. */
+    @Before
+    public void before() {
+        oldThreshold = GridTestUtils.getFieldValue(GridUnsafeDataInput.class, "RELEASE_THRESHOLD");
+
+        setThreshold(THRESHOLD);
+    }
+
+    /** Restores the release threshold of both streams. */
+    @After
+    public void after() {
+        setThreshold(oldThreshold);
+    }
 
     /**
      * @throws Exception If failed.
@@ -195,6 +213,14 @@ public class GridUnsafeDataInputOutputReleaseTest {
         out.write(data);
 
         assertArrayEquals(data, out.array());
+    }
+
+    /**
+     * @param threshold Release threshold.
+     */
+    private static void setThreshold(int threshold) {
+        GridTestUtils.setFieldValue(GridUnsafeDataInput.class, "RELEASE_THRESHOLD", threshold);
+        GridTestUtils.setFieldValue(GridUnsafeDataOutput.class, "RELEASE_THRESHOLD", threshold);
     }
 
     /**
