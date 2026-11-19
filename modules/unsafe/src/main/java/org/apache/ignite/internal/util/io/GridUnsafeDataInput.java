@@ -29,6 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
 import static org.apache.ignite.internal.util.GridUnsafe.CHAR_ARR_OFF;
@@ -42,6 +43,10 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  * Data input based on {@code Unsafe} operations.
  */
 public class GridUnsafeDataInput extends InputStream implements GridDataInput {
+    /** Buffers larger than this are replaced by a buffer of initial size after use (not final for tests). */
+    private static int RELEASE_THRESHOLD = Integer.getInteger(
+        IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD, DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD);
+
     /** */
     private static final Long CHECK_FREQ =
         Long.getLong(IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
@@ -51,6 +56,9 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
     /** Length of char buffer (for reading strings). */
     private static final int CHAR_BUF_SIZE = 256;
+
+    /** Initial size of the stream buffer. */
+    private static final int INIT_BUF_SIZE = 1024;
 
     /** Buffer for reading general/block data. */
     @GridToStringExclude
@@ -82,7 +90,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
 
     /** Buffer for reading from stream. */
     @GridToStringExclude
-    private byte[] inBuf = new byte[1024];
+    private byte[] inBuf = new byte[INIT_BUF_SIZE];
 
     /** Maximum message size. */
     private int maxOff;
@@ -181,6 +189,13 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     @Override public void reset() throws IOException {
         in = null;
 
+        if (inBuf.length > RELEASE_THRESHOLD) {
+            inBuf = new byte[INIT_BUF_SIZE];
+            maxOff = 0;
+        }
+
+        // Do not keep a reference to a dropped buffer or to the caller's array.
+        buf = inBuf;
         off = 0;
         max = 0;
     }

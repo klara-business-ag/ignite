@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import org.apache.ignite.internal.direct.DirectMarshallingMessagesTest;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStreamImplByteOrderSelfTest;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerBuffersReleaseTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSelfTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerSerialPersistentFieldsSelfTest;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerTest;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamSelfTest;
 import org.apache.ignite.internal.util.GridHandleTableSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInputOutputByteOrderSelfTest;
+import org.apache.ignite.internal.util.io.GridUnsafeDataInputOutputReleaseTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
 import org.apache.ignite.marshaller.MarshallerEnumDeadlockMultiJvmTest;
 import org.apache.ignite.marshaller.ObjectInputStreamFilteringTest;
@@ -39,10 +41,12 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     GridUnsafeDataOutputArraySizingSelfTest.class,
+    GridUnsafeDataInputOutputReleaseTest.class,
     GridJdkMarshallerSelfTest.class,
     OptimizedMarshallerEnumSelfTest.class,
     OptimizedMarshallerSelfTest.class,
     OptimizedMarshallerTest.class,
+    OptimizedMarshallerBuffersReleaseTest.class,
     OptimizedObjectStreamSelfTest.class,
     GridUnsafeDataInputOutputByteOrderSelfTest.class,
     OptimizedMarshallerSerialPersistentFieldsSelfTest.class,

@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RECHECK;
+import static org.apache.ignite.internal.util.CommonUtils.DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD;
 import static org.apache.ignite.internal.util.CommonUtils.MAX_ARRAY_SIZE;
 import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
@@ -40,6 +41,10 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  * Data output based on {@code Unsafe} operations.
  */
 public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput {
+    /** Buffers larger than this are replaced by a buffer of initial size after use (not final for tests). */
+    private static int RELEASE_THRESHOLD = Integer.getInteger(
+        IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RELEASE_THRESHOLD, DFLT_MARSHAL_BUFFERS_RELEASE_THRESHOLD);
+
     /** */
     private static final long CHECK_FREQ =
         Long.getLong(IgniteCommonsSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK, DFLT_MARSHAL_BUFFERS_RECHECK);
@@ -47,8 +52,14 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** Length of char buffer (for writing strings). */
     private static final int CHAR_BUF_SIZE = 256;
 
+    /** Empty buffer, restored when a large buffer of a stream without initial size is dropped. */
+    private static final byte[] EMPTY_BYTES = new byte[0];
+
     /** Char buffer for fast string writes. */
     private final char[] cbuf = new char[CHAR_BUF_SIZE];
+
+    /** Initial buffer size, restored when a large buffer is dropped. */
+    private final int initSize;
 
     /** Bytes. */
     private byte[] bytes;
@@ -69,13 +80,14 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
      *
      */
     public GridUnsafeDataOutput() {
-        // No-op.
+        initSize = 0;
     }
 
     /**
      * @param size Size
      */
     public GridUnsafeDataOutput(int size) {
+        initSize = size;
         bytes = new byte[size];
     }
 
@@ -304,6 +316,11 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** {@inheritDoc} */
     @Override public void reset() {
         off = 0;
+
+        if (bytes != null && bytes.length > RELEASE_THRESHOLD) {
+            bytes = initSize == 0 ? EMPTY_BYTES : new byte[initSize];
+            maxOff = 0;
+        }
 
         out = null;
     }

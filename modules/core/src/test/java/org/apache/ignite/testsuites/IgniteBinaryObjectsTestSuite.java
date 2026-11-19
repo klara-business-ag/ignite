@@ -58,6 +58,7 @@ import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompac
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryAbstractOutputStreamTest;
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
+import org.apache.ignite.internal.binary.streams.BinaryMemoryAllocatorReleaseTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.ThreadLocalAllocatorChunkShrinkTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
@@ -188,6 +189,7 @@ import org.junit.runners.Suite;
     CrossObjectReferenceSerializationTest.class,
 
     ThreadLocalAllocatorChunkShrinkTest.class,
+    BinaryMemoryAllocatorReleaseTest.class,
 
     IgniteBinaryTxPutAfterInvokeSelfTest.class,
 })
